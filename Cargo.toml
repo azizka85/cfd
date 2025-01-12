@@ -1,0 +1,9 @@
+[package]
+name = "cfd"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+members = ["1d/couette_flow/explicit_euler"]
+
+[dependencies]
