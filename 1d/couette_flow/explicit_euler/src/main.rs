@@ -12,10 +12,42 @@ const OTS: f64 = 0.003;
 const DIR: &str = "data/1d/couette_flow/explicit_euler";
 
 fn main() {        
+    if NU < 0. {
+        println!("NU should be >= 0, but it is {NU}");
+
+        return;
+    }
+
+    if H < 0. {
+        println!("H should be >= 0, but it is {H}");
+
+        return;
+    }
+
+    if OTS <= 0. {
+        println!("OTS should be > 0, but it is {OTS}");
+
+        return;
+    }
+
     let dy = 0.01;
+
+    if dy <= 0. {
+        println!("dy should be > 0, but it is {dy}");
+
+        return;
+    }
+
     let ny = (H/dy).ceil() as usize + 1;
 
     let r = 0.3; 
+
+    if r <= 0. {
+        println!("r should be > 0, but it is {r}");
+
+        return;
+    }
+
     let dt = r*dy*dy/NU;   
 
     let res = set_environment(dy, r);
@@ -28,22 +60,28 @@ fn main() {
     };
     
     let mut u = vec![0.; ny];
-    let mut u1 = vec![0.; ny];
+    let mut u1 = vec![0.; ny];    
+    let mut up = vec![0.; ny];
 
     set_initial_condition(&mut u);
-    set_boundary_condition(&mut u);
+    set_boundary_condition(&mut u);     
+
+    update_data(&mut up, &u);   
 
     let mut t = 0.;
     let mut tn = OTS;
 
-    let mut n = 0;    
+    let mut n = 1;
+    let mut m = 0; 
 
-    if let Err(err) = write_file(&u, t, dy, n, &path) {
-        println!("Error in writing file: n={n}, t={t}: {:?}", err);
+    let mut statistics = Vec::new();   
+
+    if let Err(err) = write_data(&u, t, dy, m, &path) {
+        println!("Error in writing file: m={m}, t={t}: {:?}", err);
 
         return;
     } else {
-        n += 1;
+        m += 1;
     }
     
     while t <= T {
@@ -51,24 +89,39 @@ fn main() {
 
         for i in 1..ny-1 {
             u1[i] = u[i] + r*(u[i+1] - 2.*u[i] + u[i-1]);
-        }
+        }        
 
-        update_data(&mut u, &mut u1);
+        update_data(&mut u, &u1);
+        set_value(&mut u1, 0.);
 
         t += dt;                        
 
         if t >= tn {
-            if let Err(err) = write_file(&u, t, dy, n, &path) {
-                println!("Error in writing file: n={n}, t={t}: {:?}", err);
+            if let Err(err) = write_data(&u, t, dy, m, &path) {
+                println!("Error in writing file: m={m}, t={t}: {:?}", err);
         
                 return;
             } else {
-                n += 1;
+                let max_diff = max_abs_difference(&u, &up);
+
+                println!("Write data in file t={t:.3}, convergence of u={max_diff:.5}");                
+
+                statistics.push((n, tn, max_diff));
+
+                update_data(&mut up, &u);
+
+                m += 1;
             }
 
             tn += OTS;
         }
+
+        n += 1;
     } 
+
+    let res = write_statistics(&statistics, &path);
+
+    println!("Write Statistics: {:?}", res);
 }
 
 fn set_environment(dy: f64, r: f64) -> io::Result<String> {
@@ -79,8 +132,8 @@ fn set_environment(dy: f64, r: f64) -> io::Result<String> {
     Ok(path)
 }
 
-fn write_file(u: &Vec<f64>, t: f64, dy: f64, n: usize, path: &str) -> io::Result<()> {
-    let mut file = fs::File::create(format!("{path}/data.{n:03}.vtk"))?;
+fn write_data(u: &Vec<f64>, t: f64, dy: f64, m: usize, path: &str) -> io::Result<()> {
+    let mut file = fs::File::create(format!("{path}/data.{m:03}.vtk"))?;
 
     writeln!(file, "# vtk DataFile Version 3.0")?;
     writeln!(file, "TIME {t:.3}")?;
@@ -113,6 +166,28 @@ fn write_file(u: &Vec<f64>, t: f64, dy: f64, n: usize, path: &str) -> io::Result
     Ok(())
 }
 
+fn write_statistics(statistics: &Vec<(usize, f64, f64)>, path: &str) -> io::Result<()> {
+    let path = format!("{path}/statistics");
+    
+    fs::create_dir_all(path.clone())?;
+
+    let mut writer = csv::Writer::from_path(
+        format!("{path}/convergence.csv")
+    )?;
+    
+    writer.write_record(["n", "t", "max_diff"])?;
+
+    for s in statistics {
+        writer.write_record([
+            format!("{}", s.0),
+            format!("{:.3}", s.1),
+            format!("{:.5}", s.2)
+        ])?;
+    }
+
+    Ok(())
+}
+
 fn set_initial_condition(u: &mut Vec<f64>) {
     let n = u.len();
 
@@ -130,11 +205,30 @@ fn set_boundary_condition(u: &mut Vec<f64>) {
     }
 }
 
-fn update_data(u: &mut Vec<f64>, u1: &mut Vec<f64>) {
+fn update_data(u: &mut Vec<f64>, u1: &Vec<f64>) {
     let n = u.len();
 
     for i in 0..n {
         u[i] = u1[i];
-        u1[i] = 0.;
     }
+}
+
+fn set_value(u: &mut Vec<f64>, value: f64) {
+    let n = u.len();
+
+    for i in 0..n {
+        u[i] = value;
+    }
+}
+
+fn max_abs_difference(u: &Vec<f64>, u1: &Vec<f64>) -> f64 {
+    let n = u.len();
+
+    let mut max_diff: f64 = 0.;
+
+    for i in 0..n {
+        max_diff = max_diff.max((u[i] - u1[i]).abs())
+    }
+
+    max_diff
 }

@@ -1,7 +1,7 @@
 [package]
-name = "explicit_euler"
+name = "steady_state"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-csv = "1.3.0"
+slae = {path = "../../../slae"}
