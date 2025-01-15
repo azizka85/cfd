@@ -2,3 +2,4 @@
 
 - Couette Flow
 - - Explicit Euler
+- - Steady State
