@@ -5,4 +5,4 @@ project(cfd LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_executable(cfd main.cpp)
+add_subdirectory(1d/couette_flow/explicit_euler)
