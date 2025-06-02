@@ -144,14 +144,14 @@ void Solver::setInitialCondition(int ny, vector<double>& u) {
     }
 }
 
-void CouetteFlow::ExplicitEuler::Solver::setBoundaryCondition(int ny, vector<double> &u) {
+void Solver::setBoundaryCondition(int ny, vector<double> &u) {
     if (ny > 0) {
         u[0] = 0.;
         u[ny - 1] = uTop;
     }
 }
 
-double CouetteFlow::ExplicitEuler::Solver::maxAbsDifference(int ny, vector<double> &u, vector<double> &u1) {
+double Solver::maxAbsDifference(int ny, vector<double> &u, vector<double> &u1) {
     double maxDiff = 0.;
 
     for (int i = 0; i < ny; i++) {
@@ -164,13 +164,13 @@ double CouetteFlow::ExplicitEuler::Solver::maxAbsDifference(int ny, vector<doubl
     return maxDiff;
 }
 
-void CouetteFlow::ExplicitEuler::Solver::updateData(int ny, vector<double> &u, vector<double> &u1) {
+void Solver::updateData(int ny, vector<double> &u, vector<double> &u1) {
     for (int i = 0; i < ny; i++) {
         u[i] = u1[i];
     }
 }
 
-void CouetteFlow::ExplicitEuler::Solver::writeData(vector<double> &u, double t, double dy, int ny, int m, path outDir) {
+void Solver::writeData(vector<double> &u, double t, double dy, int ny, int m, path outDir) {
     auto filePath = path(
         format("data.{:03}.vtk", m)
     );
@@ -210,7 +210,7 @@ void CouetteFlow::ExplicitEuler::Solver::writeData(vector<double> &u, double t, 
     }
 }
 
-void CouetteFlow::ExplicitEuler::Solver::writeStatistics(vector<tuple<int, double, double>> &statistics, path outDir) {
+void Solver::writeStatistics(vector<tuple<int, double, double>> &statistics, path outDir) {
     auto dirPath = outDir / path("statistics");
 
     create_directory(dirPath);
@@ -225,11 +225,11 @@ void CouetteFlow::ExplicitEuler::Solver::writeStatistics(vector<tuple<int, doubl
         );
     }
 
-    file << "n  t   max_diff" << endl;
+    file << "n,  t,   max_diff" << endl;
 
     for (auto t: statistics) {
         file << format(
-            "{}  {:.3f}  {:.5f}", 
+            "{},  {:.3f},  {:.5f}", 
             get<0>(t),
             get<1>(t),
             get<2>(t)
