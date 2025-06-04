@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "solver.h"
 
 using namespace CouetteFlow::SteadyState;
@@ -9,9 +11,13 @@ int main() {
 
     string dir = "data";
 
-    Solver solver(uTop, h, dy, dir);
+    try {
+        Solver solver(uTop, h, dy, dir);
 
-    solver.solve();
+        solver.solve();
+    } catch (const exception& e) {
+        cout << "Caught exception: " << e.what() << std::endl;
+    }
 
     return 0;
 }

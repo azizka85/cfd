@@ -120,19 +120,6 @@ void Solver::writeData(vector<double> &u, double dy, int ny, path outDir) {
     }
 }
 
-void Solver::constructSLAE(int ny, vector<double> &l, vector<double> &c, vector<double> &r) {
-    if (ny > 0) {
-        c[0] = 1;
-        c[ny-1] = 1;
-
-        for (int i = 1; i < ny-1; i++) {
-            l[i] = 1;
-            c[i] = -2;
-            r[i] = 1;
-        }
-    }
-}
-
 void Solver::solve() {
     auto outDir = createDirectory();
 
@@ -144,11 +131,9 @@ void Solver::solve() {
 
     setBoundaryCondition(ny, u);
 
-    vector<double> l(ny);
-    vector<double> c(ny);
-    vector<double> r(ny);
-
-    constructSLAE(ny, l, c, r);
+    double l = 1;
+    double c = -2;
+    double r = 1;
 
     vector<double> u1(ny);
 

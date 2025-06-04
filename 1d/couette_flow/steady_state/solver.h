@@ -23,8 +23,6 @@ namespace CouetteFlow::SteadyState {
 
             void writeData(vector<double>& u, double dy, int ny, path outDir);
 
-            void constructSLAE(int ny, vector<double>& l, vector<double>& c, vector<double>& r);
-
         public:
             Solver(double uTop, double h, double dy, string dir);
 
