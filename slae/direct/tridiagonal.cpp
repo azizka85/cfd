@@ -26,17 +26,30 @@ void calc(int n, const vector<double> &l, const vector<double> &c, const vector<
     }
 }
 
-void calc(int n, const double l, const double c, const double r, vector<double> &d, vector<double> &u) {
+void calc(
+    int n, 
+    const double l, const double l1, 
+    const double c, const double c0, const double c1, 
+    const double r, const double r0, 
+    vector<double> &d, vector<double> &u
+) {
     if (n > 0) {
-        u[0] = 0;
+        u[0] = r0 / c0;
+        d[0] = d[0] / c0;
 
-        for (int i = 1; i < n-1; i++) {
-            auto c1 = c - l * u[i-1];
+        if (n > 1) {
+            for (int i = 1; i < n-1; i++) {
+                auto ct = c - l * u[i-1];
 
-            u[i] = r / c1;
-            d[i] = (d[i] - l * d[i-1]) / c1;
+                u[i] = r / ct;
+                d[i] = (d[i] - l * d[i-1]) / ct;
+            }
+            
+            auto ct = c1 - l1 * u[n-2];
+
+            d[n-1] = (d[n-1] - l1 * d[n-2]) / ct;            
         }
-        
+
         u[n-1] = d[n-1];
 
         for (int i = n-2; i >= 0; i--) {
@@ -51,11 +64,16 @@ void Tridiagonal::solve(const vector<double> &l, const vector<double> &c, const 
     calc(n, l, c, r, d, u);
 }
 
-void SLAE::Direct::Tridiagonal::solve(const double l, const double c, const double r, vector<double> &d, vector<double> &u) {
+void SLAE::Direct::Tridiagonal::solve(
+    const double l, const double l1, 
+    const double c, const double c0, const double c1, 
+    const double r, const double r0, 
+    vector<double> &d, vector<double> &u
+) {
     int n = d.size();
 
     check(n, u);    
-    calc(n, l, c, r, d, u);
+    calc(n, l, l1, c, c0, c1, r, r0, d, u);
 }
 
 int Tridiagonal::check(const vector<double> &l, const vector<double> &c, const vector<double> &r, vector<double> &d, vector<double> &u) {

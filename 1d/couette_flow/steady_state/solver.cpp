@@ -132,12 +132,18 @@ void Solver::solve() {
     setBoundaryCondition(ny, u);
 
     double l = 1;
+    double l1 = 0;
+
     double c = -2;
+    double c0 = 1;
+    double c1 = 1;
+
     double r = 1;
+    double r0 = 0;
 
     vector<double> u1(ny);
 
-    Tridiagonal::solve(l, c, r, u, u1);
+    Tridiagonal::solve(l, l1, c, c0, c1, r, r0, u, u1);
 
     writeData(u1, dy, ny, outDir);
 }
