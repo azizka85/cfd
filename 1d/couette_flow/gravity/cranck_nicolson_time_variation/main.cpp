@@ -7,7 +7,7 @@ using namespace std;
 using namespace CouetteFlow::Gravity::CranckNicolsonWithTimeVariation;
 
 int main() {
-    double gx = 10;
+    double gx = 1;
     double nu = 1;
     double h = 1;
     double dy = 0.01;
