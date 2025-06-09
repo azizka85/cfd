@@ -11,7 +11,7 @@ int main() {
     double nu = 1;
     double h = 1;
     double dy = 0.01;
-    double r = 30;
+    double r = 0.3;
     double endTime = 0.3;
     double outputTimeStep = 0.003;
 
