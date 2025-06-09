@@ -1,5 +1,5 @@
-#ifndef COUETTE_FLOW_CRANCK_NICOLSON_TIME_VARIATION_SOLVER_H
-#define COUETTE_FLOW_CRANCK_NICOLSON_TIME_VARIATION_SOLVER_H
+#ifndef COUETTE_FLOW_GRAVITY_CRANCK_NICOLSON_TIME_VARIATION_SOLVER_H
+#define COUETTE_FLOW_GRAVITY_CRANCK_NICOLSON_TIME_VARIATION_SOLVER_H
 
 #include <tuple>
 #include <string>
@@ -11,10 +11,10 @@ using namespace std;
 
 using namespace std::filesystem;
 
-namespace CouetteFlow::CranckNicolsonWithTimeVariation {
+namespace CouetteFlow::Gravity::CranckNicolsonWithTimeVariation {
     class Solver {
         private:
-            double uTop;
+            double gx;
             double nu;
             double h;
             double dy;
@@ -29,7 +29,7 @@ namespace CouetteFlow::CranckNicolsonWithTimeVariation {
             void setInitialCondition(int ny, vector<double>& u);
             void setBoundaryCondition(int ny, vector<double>& u);       
             
-            void calculateResidualElements(int ny, double r, vector<double>& u, vector<double>& d);
+            void calculateResidualElements(int ny, double dt, double r, vector<double>& u, vector<double>& d);
 
             double adjustTimeStep(double t, double dt);
             
@@ -40,10 +40,10 @@ namespace CouetteFlow::CranckNicolsonWithTimeVariation {
             void writeStatistics(vector<tuple<int, double, double>>& statistics, path outDir);
 
         public:
-            Solver(double uTop, double nu, double h, double dy, double r, double b, double endTime, double outputTimeStep, string dir);
+            Solver(double gx, double nu, double h, double dy, double r, double b, double endTime, double outputTimeStep, string dir);
 
-            double getUTop();
-            void setUTop(double val);
+            double getGx();
+            void setGx(double val);
 
             double getNU();
             void setNU(double val);

@@ -12,3 +12,8 @@ add_subdirectory(1d/couette_flow/steady_state)
 add_subdirectory(1d/couette_flow/implicit_euler)
 add_subdirectory(1d/couette_flow/cranck_nicolson)
 add_subdirectory(1d/couette_flow/cranck_nicolson_time_variation)
+
+add_subdirectory(1d/couette_flow/free_surface/cranck_nicolson_time_variation/1_order_bc)
+add_subdirectory(1d/couette_flow/free_surface/cranck_nicolson_time_variation/2_order_bc)
+
+add_subdirectory(1d/couette_flow/gravity/cranck_nicolson_time_variation)

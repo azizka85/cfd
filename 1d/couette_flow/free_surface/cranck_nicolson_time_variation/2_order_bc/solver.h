@@ -1,5 +1,5 @@
-#ifndef COUETTE_FLOW_CRANCK_NICOLSON_TIME_VARIATION_SOLVER_H
-#define COUETTE_FLOW_CRANCK_NICOLSON_TIME_VARIATION_SOLVER_H
+#ifndef COUETTE_FLOW_FREE_SURFACE_CRANCK_NICOLSON_TIME_VARIATION_2_ORDER_BC_SOLVER_H
+#define COUETTE_FLOW_FREE_SURFACE_CRANCK_NICOLSON_TIME_VARIATION_2_ORDER_BC_SOLVER_H
 
 #include <tuple>
 #include <string>
@@ -11,10 +11,10 @@ using namespace std;
 
 using namespace std::filesystem;
 
-namespace CouetteFlow::CranckNicolsonWithTimeVariation {
+namespace CouetteFlow::FreeSurface::CranckNicolsonWithTimeVariation::SecondOrderBC {
     class Solver {
         private:
-            double uTop;
+            double uBottom;
             double nu;
             double h;
             double dy;
@@ -40,10 +40,10 @@ namespace CouetteFlow::CranckNicolsonWithTimeVariation {
             void writeStatistics(vector<tuple<int, double, double>>& statistics, path outDir);
 
         public:
-            Solver(double uTop, double nu, double h, double dy, double r, double b, double endTime, double outputTimeStep, string dir);
+            Solver(double uBottom, double nu, double h, double dy, double r, double b, double endTime, double outputTimeStep, string dir);
 
-            double getUTop();
-            void setUTop(double val);
+            double getUBottom();
+            void setUBottom(double val);
 
             double getNU();
             void setNU(double val);
