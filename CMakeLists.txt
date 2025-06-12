@@ -17,3 +17,5 @@ add_subdirectory(1d/couette_flow/free_surface/cranck_nicolson_time_variation/1_o
 add_subdirectory(1d/couette_flow/free_surface/cranck_nicolson_time_variation/2_order_bc)
 
 add_subdirectory(1d/couette_flow/gravity/cranck_nicolson_time_variation)
+
+add_subdirectory(1d/couette_flow/high_order_compact/cranck_nicolson_time_variation)
