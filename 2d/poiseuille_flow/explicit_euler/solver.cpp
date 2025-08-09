@@ -1,3 +1,5 @@
+#define _USE_MATH_DEFINES
+
 #include <format>
 
 #include <cmath>
@@ -7,31 +9,25 @@
 
 #include <stdexcept>
 
-#include <slae/direct/tridiagonal.h>
-
 #include "solver.h"
 
-using namespace SLAE::Direct;
+using namespace PoiseuilleFlow::ExplicitEuler;
 
-using namespace CouetteFlow::CranckNicolson;
-
-Solver::Solver(double uTop, double nu, double h, double dy, double r, double endTime, double outputTimeStep, string dir) {
-    setUTop(uTop);
+Solver::Solver(
+    double nu, double dx, double dy, double r, 
+    double endTime, double outputTimeStep, string dir
+) {
     setNU(nu);
-    setH(h);
+
+    setDX(dx);
     setDY(dy);
+
     setR(r);
+
     setEndTime(endTime);
     setOutputTimeStep(outputTimeStep);
+
     setDir(dir);
-}
-
-double Solver::getUTop() {
-    return uTop;
-}
-
-void Solver::setUTop(double val) {
-    uTop = val;
 }
 
 double Solver::getNU() {
@@ -48,18 +44,18 @@ void Solver::setNU(double val) {
     nu = val;
 }
 
-double Solver::getH() {
-    return h;
+double Solver::getDX() {
+    return dx;
 }
 
-void Solver::setH(double val) {
+void Solver::setDX(double val) {
     if (val <= 0) {
         throw runtime_error(
-            format("H should be > 0, but it is {}", val)
+            format("dx should be > 0, but it is {}", val)
         );
     }
 
-    h = val;
+    dx = val;
 }
 
 double Solver::getDY() {
@@ -134,7 +130,7 @@ void Solver::setDir(string val) {
 
 path Solver::createDirectory() {
     auto dirPath = path(
-        format("{}/nu={}, U={}, H={}/dy={}, r={}", dir, nu, uTop, h, dy, r)
+        format("{}/nu={}/dx={}, dy={}, r={}", dir, nu, dx, dy, r)
     );
 
     create_directories(dirPath);    
@@ -142,50 +138,65 @@ path Solver::createDirectory() {
     return dirPath;
 }
 
-void Solver::setInitialCondition(int ny, vector<double>& u) {
-    for (int i = 0; i < ny; i++) {
-        u[i] = 0.;
-    }
-}
+void Solver::setInitialCondition(int nx, int ny, vector<vector<double>> &w) {
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            double x = i*dx;
+            double y = j*dy;
 
-void Solver::setBoundaryCondition(int ny, vector<double> &u) {
-    if (ny > 0) {
-        u[0] = 0.;
-        u[ny - 1] = uTop;
-    }
-}
-
-void Solver::calculateResidualElements(int ny, vector<double> &u, vector<double> &d) {
-    if (ny > 0) {
-        d[0] = u[0];
-        d[ny-1] = u[ny-1];
-
-        for (int i = 1; i < ny - 1; i++) {
-            d[i] = r*u[i+1]/2 + (1 - r)*u[i] + r*u[i-1]/2;
+            w[i][j] = sin(M_PI*x) * sin(M_PI*y);
         }
     }
 }
 
-double Solver::maxAbsDifference(int ny, vector<double> &u, vector<double> &u1) {
-    double maxDiff = 0.;
+void Solver::setBoundaryCondition(int nx, int ny, vector<vector<double>> &w) {
+    for (int i = 0; i < nx; i++) {
+        w[i][0] = 0;
+        w[i][ny-1] = 0;
+    }
 
-    for (int i = 0; i < ny; i++) {
-        maxDiff = max(
-            maxDiff,
-            abs(u[i] - u1[i])
-        );
+    for (int j = 0; j < ny; j++) {
+        w[0][j] = 0;
+        w[nx-1][j] = 0;
+    }
+}
+
+double Solver::maxAbsDifference(
+    int nx, int ny, 
+    vector<vector<double>> &w, 
+    vector<vector<double>> &w1
+) {
+    double maxDiff = 0;
+
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            maxDiff = max(
+                maxDiff,
+                abs(w[i][j] - w1[i][j])
+            );
+        }
     }
 
     return maxDiff;
 }
 
-void Solver::updateData(int ny, vector<double> &u, vector<double> &u1) {
-    for (int i = 0; i < ny; i++) {
-        u[i] = u1[i];
+void Solver::updateData(
+    int nx, int ny, 
+    vector<vector<double>> &w, 
+    vector<vector<double>> &w1
+) {
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            w[i][j] = w1[i][j];
+        }
     }
 }
 
-void Solver::writeData(vector<double> &u, double t, double dy, int ny, int m, path outDir) {
+void Solver::writeData(
+    vector<vector<double>> &w, 
+    double t, int nx, int ny, 
+    int m, path outDir
+) {
     auto filePath = path(
         format("data.{:03}.vtk", m)
     );
@@ -204,28 +215,36 @@ void Solver::writeData(vector<double> &u, double t, double dy, int ny, int m, pa
     file << format("TIME {:.3f}", t) << endl;
     file << "ASCII" << endl;
     file << "DATASET STRUCTURED_GRID" << endl;
-    file << format("DIMENSIONS 1 {} 1", ny) << endl;    
-    file << format("POINTS {} float", ny) << endl;
+    file << format("DIMENSIONS {} {} 1", nx, ny) << endl;    
+    file << format("POINTS {} float", nx*ny) << endl;
 
-    for (int i = 0; i < ny; i++) {
-        double y = dy * i;
+    for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {
+            double x = dx * i;
+            double y = dy * j;
 
-        file << format("0.0 {:.3f} 0.0", y) << endl;
+            file << format("{:.3f} {:.3f} 0.0", x, y) << endl;
+        }
     }
 
     file << "FIELD FieldData 1" << endl;
     file << "Time 1 1 float" << endl;
     file << format("{:.3f}", t) << endl;
-    file << format("POINT_DATA {}", ny) << endl;
-    file << "SCALARS u float" << endl;
+    file << format("POINT_DATA {}", nx*ny) << endl;
+    file << "SCALARS w float" << endl;
     file << "LOOKUP_TABLE default" << endl;
 
-    for (int i = 0; i < ny; i++) {
-        file << format("{:.3f}", u[i]) << endl;
+    for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {
+            file << format("{:.3f}", w[i][j]) << endl;
+        }
     }
 }
 
-void Solver::writeStatistics(vector<tuple<int, double, double>> &statistics, path outDir) {
+void Solver::writeStatistics(
+    vector<tuple<int, double, double>> &statistics, 
+    path outDir
+) {
     auto dirPath = outDir / path("statistics");
 
     create_directory(dirPath);
@@ -255,19 +274,27 @@ void Solver::writeStatistics(vector<tuple<int, double, double>> &statistics, pat
 void Solver::solve() {
     auto outDir = createDirectory();
 
-    double dt = r*dy*dy/nu;
+    double dt = min(r*dx*dx/nu, r*dy*dy/nu);
 
-    int ny = static_cast<int>(
-        ceil(h/dy)
+    double rx = nu*dt/dx/dx;
+    double ry = nu*dt/dy/dy;
+
+    int nx = static_cast<int>(
+        ceil(1/dx)
     ) + 1;
 
-    vector<double> u(ny);    
-    vector<double> up(ny);
+    int ny = static_cast<int>(
+        ceil(1/dy)
+    ) + 1;
 
-    setInitialCondition(ny, u);
-    setBoundaryCondition(ny, u);
+    vector<vector<double>> w(nx, vector<double>(ny));
+    vector<vector<double>> w1(nx, vector<double>(ny));
+    vector<vector<double>> wp(nx, vector<double>(ny));
 
-    updateData(ny, up, u);
+    setInitialCondition(nx, ny, w);
+    setBoundaryCondition(nx, ny, w);
+
+    updateData(nx, ny, wp, w);
 
     double t = 0;
     double tn = outputTimeStep;
@@ -277,39 +304,33 @@ void Solver::solve() {
 
     vector<tuple<int, double, double>> statistics;
 
-    writeData(u, t, dy, ny, m, outDir);
+    writeData(w, t, nx, ny, m, outDir);
 
     m += 1;
 
-    double al = -r/2;
-    double al1 = 0;
-
-    double ac = 1 + r;
-    double ac0 = 1;
-    double ac1 = 1;
-
-    double ar = -r/2;
-    double ar0 = 0;
-
-    vector<double> d(ny);
-
     while (t <= endTime) {
-        calculateResidualElements(ny, u, d);
+        for (int i = 1; i < nx - 1; i++) {
+            for (int j = 1; j < ny - 1; j++) {
+                w1[i][j] = w[i][j] + rx*(w[i+1][j] - 2*w[i][j] + w[i-1][j]) + 
+                            ry*(w[i][j+1] - 2*w[i][j] + w[i][j-1]);
+            }
+        }
 
-        Tridiagonal::solve(al, al1, ac, ac0, ac1, ar, ar0, d, u);
+        setBoundaryCondition(nx, ny, w1);
+        updateData(nx, ny, w, w1);
 
         t += dt;
 
         if (t >= tn) {
-            writeData(u, t, dy, ny, m, outDir);
+            writeData(w, t, nx, ny, m, outDir);
 
-            auto maxDiff = maxAbsDifference(ny, u, up);
+            auto maxDiff = maxAbsDifference(nx, ny, w, wp);
 
-            cout << format("Write data in file t={:.3f}, convergence of u={:.5f}", t, maxDiff) << endl;
+            cout << format("Write data in file t={:.3f}, convergence of w={:.5f}", t, maxDiff) << endl;
 
             statistics.push_back({n, tn, maxDiff});
 
-            updateData(ny, up, u);
+            updateData(nx, ny, wp, w);
 
             m += 1;
 

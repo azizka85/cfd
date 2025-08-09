@@ -1,5 +1,5 @@
-#ifndef COUETTE_FLOW_CRANCK_NICOLSON_SOLVER_H
-#define COUETTE_FLOW_CRANCK_NICOLSON_SOLVER_H
+#ifndef POISEUILLE_FLOW_FREE_SURFACE_CRANCK_NICOLSON_SOLVER_H
+#define POISEUILLE_FLOW_FREE_SURFACE_CRANCK_NICOLSON_SOLVER_H
 
 #include <tuple>
 #include <string>
@@ -11,48 +11,46 @@ using namespace std;
 
 using namespace std::filesystem;
 
-namespace CouetteFlow::CranckNicolson {
+namespace PoiseuilleFlow::FreeSurface::CranckNicolson {
     class Solver {
         private:
-            double uTop;
             double nu;
-            double h;
+            double dx;
             double dy;
             double r;
+            double epsilon;
             double endTime;
             double outputTimeStep;
             string dir;
 
             path createDirectory();
 
-            void setInitialCondition(int ny, vector<double>& u);
-            void setBoundaryCondition(int ny, vector<double>& u);       
-            
-            void calculateResidualElements(int ny, vector<double>& u, vector<double>& d);
-            
-            double maxAbsDifference(int ny, vector<double>& u, vector<double>& u1);
+            void setInitialCondition(int nx, int ny,  vector<double>& w);
+            void setBoundaryCondition(int nx, int ny,  vector<double>& w);                  
 
-            void updateData(int ny, vector<double>& u, vector<double>& u1);
-            void writeData(vector<double>& u, double t, double dy, int ny, int m, path outDir);
+            tuple<vector<int>, vector<int>, vector<double>> buildMatrix(int nx, int ny, double rx, double ry);
+            void calculateResidualElements(int nx, int ny, double rx, double ry, vector<double>& w, vector<double>& d);
+
+            void writeData(vector<double>& w, double t, int nx, int ny, int m, path outDir);
             void writeStatistics(vector<tuple<int, double, double>>& statistics, path outDir);
 
         public:
-            Solver(double uTop, double nu, double h, double dy, double r, double endTime, double outputTimeStep, string dir);
-
-            double getUTop();
-            void setUTop(double val);
+            Solver(double nu, double dx, double dy, double r, double epsilon, double endTime, double outputTimeStep, string dir);
 
             double getNU();
             void setNU(double val);
 
-            double getH();
-            void setH(double val);
+            double getDX();
+            void setDX(double val);
 
             double getDY();
             void setDY(double val);
 
             double getR();
             void setR(double r);
+
+            double getEpsilon();
+            void setEpsilon(double val);
 
             double getEndTime();
             void setEndTime(double val);

@@ -11,6 +11,10 @@
         "initializer_list": "cpp",
         "utility": "cpp",
         "xutility": "cpp",
-        "cmath": "cpp"
+        "cmath": "cpp",
+        "chrono": "cpp",
+        "thread": "cpp",
+        "iostream": "cpp",
+        "tuple": "cpp"
     }
 }

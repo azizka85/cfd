@@ -64,7 +64,7 @@ void Tridiagonal::solve(const vector<double> &l, const vector<double> &c, const 
     calc(n, l, c, r, d, u);
 }
 
-void SLAE::Direct::Tridiagonal::solve(
+void Tridiagonal::solve(
     const double l, const double l1, 
     const double c, const double c0, const double c1, 
     const double r, const double r0, 

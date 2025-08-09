@@ -22,3 +22,14 @@ add_subdirectory(1d/couette_flow/high_order_compact/cranck_nicolson_time_variati
 
 add_subdirectory(1d/heat_conduction/thermally_insulated/cranck_nicolson_time_variation)
 add_subdirectory(1d/heat_conduction/thermally_insulated/steady_state)
+
+add_subdirectory(2d/poiseuille_flow/explicit_euler)
+add_subdirectory(2d/poiseuille_flow/peaceman_rachford)
+add_subdirectory(2d/poiseuille_flow/cranck_nicolson)
+
+add_subdirectory(2d/poiseuille_flow/free_surface/peaceman_rachford)
+add_subdirectory(2d/poiseuille_flow/free_surface/cranck_nicolson)
+
+add_subdirectory(2d/poiseuille_flow/steady_state/richardson)
+add_subdirectory(2d/poiseuille_flow/steady_state/sor)
+add_subdirectory(2d/poiseuille_flow/steady_state/cg)
