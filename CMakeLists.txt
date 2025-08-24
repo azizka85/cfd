@@ -30,6 +30,14 @@ add_subdirectory(2d/poiseuille_flow/cranck_nicolson)
 add_subdirectory(2d/poiseuille_flow/free_surface/peaceman_rachford)
 add_subdirectory(2d/poiseuille_flow/free_surface/cranck_nicolson)
 
+add_subdirectory(2d/poiseuille_flow/elliptic_domain/peaceman_rachford)
+add_subdirectory(2d/poiseuille_flow/elliptic_domain/cranck_nicolson)
+add_subdirectory(2d/poiseuille_flow/triangular_domain/peaceman_rachford)
+add_subdirectory(2d/poiseuille_flow/triangular_domain/cranck_nicolson)
+
+add_subdirectory(2d/poiseuille_flow/triangular_domain/free_surface/peaceman_rachford)
+add_subdirectory(2d/poiseuille_flow/triangular_domain/free_surface/cranck_nicolson)
+
 add_subdirectory(2d/poiseuille_flow/steady_state/richardson)
 add_subdirectory(2d/poiseuille_flow/steady_state/sor)
 add_subdirectory(2d/poiseuille_flow/steady_state/cg)

@@ -16,5 +16,6 @@
         "thread": "cpp",
         "iostream": "cpp",
         "tuple": "cpp"
-    }
+    },
+    "OpenCL.explorer.localizedProperties": true
 }
