@@ -41,3 +41,7 @@ add_subdirectory(2d/poiseuille_flow/triangular_domain/free_surface/cranck_nicols
 add_subdirectory(2d/poiseuille_flow/steady_state/richardson)
 add_subdirectory(2d/poiseuille_flow/steady_state/sor)
 add_subdirectory(2d/poiseuille_flow/steady_state/cg)
+
+add_subdirectory(2d/poiseuille_flow/steady_state/free_surface/richardson)
+add_subdirectory(2d/poiseuille_flow/steady_state/free_surface/sor)
+add_subdirectory(2d/poiseuille_flow/steady_state/free_surface/cg)

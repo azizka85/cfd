@@ -11,7 +11,7 @@
 
 #include "solver.h"
 
-using namespace PoiseuilleFlow::SteadyState::Richardson;
+using namespace PoiseuilleFlow::SteadyState::FreeSurface::SOR;
 
 Solver::Solver(double dx, double dy, double epsilon, string dir) {
     setDX(dx);
@@ -105,7 +105,6 @@ void Solver::setBoundaryCondition(
 ) {
     for (int i = 0; i < nx; i++) {
         w[i][0] = 0;
-        w[i][ny-1] = 0;
     }
 
     for (int j = 0; j < ny; j++) {
@@ -127,7 +126,7 @@ double Solver::calculateMaxAbsResidualElement(
                 abs(
                     (w[i+1][j] - 2*w[i][j] + w[i-1][j])/dx/dx + 
                     (w[i][j+1] - 2*w[i][j] + w[i][j-1])/dy/dy + 
-                    2*M_PI*M_PI*sin(M_PI*i*dx)*sin(M_PI*j*dy)
+                    5*M_PI*M_PI*sin(M_PI*i*dx)*sin(M_PI*j*dy/2)/4
                 )
             );
         }
@@ -226,30 +225,41 @@ void Solver::solve() {
 
     double maxR = calculateMaxAbsResidualElement(nx, ny, w);
 
+    double b = dx/dy;
+    double l = (cos(M_PI/(nx-1)) + b*b*cos(M_PI/(ny-1)))/(1 + b*b);
+    double k = l*l;
+    double omega = 2*(1 - sqrt(1 - k))/k;
+
     vector<tuple<int, double>> statistics;
 
     statistics.push_back({0, maxR});
-
-    double b = dx/dy;
 
     int n = 1;
 
     while (maxR > epsilon) {
         for (int i = 1; i < nx - 1; i++) {
             for (int j = 1; j < ny - 1; j++) {
-                w[i][j] = (
+                w[i][j] += omega*(
                     w[i+1][j] + w[i-1][j] + 
-                    b*b*w[i][j+1] + b*b*w[i][j-1] + 
-                    2*dx*dx*M_PI*M_PI*sin(M_PI*i*dx)*sin(M_PI*j*dy)
+                    b*b*w[i][j+1] + b*b*w[i][j-1] - 
+                    2*(1 + b*b)*w[i][j] + 
+                    5*dx*dx*M_PI*M_PI*sin(M_PI*i*dx)*sin(M_PI*j*dy/2)/4
                 )/2/(b*b + 1);
             }
+
+            w[i][ny-1] += omega*(
+                w[i+1][ny-1] + w[i-1][ny-1] + 
+                2*b*b*w[i][ny-2] - 
+                2*(1 + b*b)*w[i][ny-1] + 
+                5*dx*dx*M_PI*M_PI*sin(M_PI*i*dx)/4
+            )/2/(b*b + 1);
         }
 
         maxR = calculateMaxAbsResidualElement(nx, ny, w);
 
         cout << format(
-            "Iteration={}, convergence of w={:.6f}", 
-            n, maxR
+            "Iteration={}, omega={:.3f}, convergence of w={:.6f}", 
+            n, omega, maxR
         ) << endl;
 
         statistics.push_back({n, maxR});
