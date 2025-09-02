@@ -45,3 +45,15 @@ add_subdirectory(2d/poiseuille_flow/steady_state/cg)
 add_subdirectory(2d/poiseuille_flow/steady_state/free_surface/richardson)
 add_subdirectory(2d/poiseuille_flow/steady_state/free_surface/sor)
 add_subdirectory(2d/poiseuille_flow/steady_state/free_surface/cg)
+
+add_subdirectory(2d/poiseuille_flow/steady_state/elliptic_domain/richardson)
+add_subdirectory(2d/poiseuille_flow/steady_state/elliptic_domain/sor)
+add_subdirectory(2d/poiseuille_flow/steady_state/elliptic_domain/cg)
+
+add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/richardson)
+add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/sor)
+add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/cg)
+
+add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/free_surface/richardson)
+add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/free_surface/sor)
+add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/free_surface/cg)

@@ -322,7 +322,32 @@ void Solver::calculateResidualElements(
                         int kr = i + 1 + (ny - 1)*nx;
                         int kd = i + (ny - 2)*nx;
 
-                        d[k] = (1 - rx - ry)*w[k]/2 + rx*(w[kr] + w[kl])/4 + ry*w[kd]/2;
+                        double wl = w[kl];
+
+                        if (i == 1) {
+                            wl = cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
+                            d[k] += rx*cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/4;
+                        }                        
+
+                        double wr = w[kr];
+
+                        if (i == nx - 2) {
+                            wr = cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
+                            d[k] += rx*cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/4;
+                        }       
+                        
+                        double wd = w[kd];
+
+                        tie(isDomain, isBoundary) = pointInDomain(x, y - dy);
+
+                        if (!isDomain) {
+                            wd = 0;
+                        } else if (isBoundary) {
+                            wd = cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*t);
+                            d[k] += ry*cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
+                        }
+
+                        d[k] += (1 - rx - ry)*w[k]/2 + rx*(wr + wl)/4 + ry*wd/2;
                     } else {
                         d[k] = cos(M_PI*x)*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
                     }                    
@@ -548,7 +573,7 @@ void Solver::solve() {
 
             auto maxDiff = maxAbsElem(wp);
 
-            cout << format("Write data in file t={:.3f}, convergence of w={:.5f}", t, maxDiff) << endl;
+            cout << format("Write data in file t={:.3f}, convergence of w={:.5f}", t, maxDiff) << endl;            
 
             statistics.push_back({n, tn, maxDiff});
 
