@@ -145,6 +145,25 @@ path Solver::createDirectory() {
     return dirPath;
 }
 
+void Solver::setSolution(int nx, int ny, double x0, double y0, vector<double> &w) {
+    for (int j = 0; j < ny; j++) {
+        for (int i = 0; i < nx; i++) {            
+            double x = x0 + i*dx;
+            double y = y0 + j*dy;
+
+            auto [isDomain, _] = pointInDomain(x, y);
+
+            int k = i + j*nx;
+
+            if (isDomain) {
+                w[k] = sin(M_PI*x)*cos(M_PI*y);
+            } else {
+                w[k] = 0;
+            }
+        }
+    }
+}
+
 void Solver::setInitialCondition(
     int nx, int ny, 
     vector<double> &w
@@ -267,7 +286,7 @@ void Solver::calculateResidualElements(
 
                 tie(isDomain, isBoundary) = pointInDomain(x, y + dy);
 
-                if (isBoundary) {
+                if (isBoundary && j < ny - 2) {
                     d[k] -= r*r*sin(M_PI*x)*cos(M_PI*(y + dy));
                 }
             } else {
@@ -390,15 +409,24 @@ void Solver::solve() {
     ) + 1;
 
     vector<double> w(nx*ny);
-    vector<double> d(nx*ny);
-
-    setInitialCondition(nx, ny, w);        
+    vector<double> d(nx*ny);            
+    vector<double> v(nx*ny);            
 
     vector<int> ip;
     vector<int> jp;
     vector<double> e;
 
     tie(ip, jp, e) = buildMatrix(nx, ny, x0, y0);    
+
+    setSolution(nx, ny, x0, y0, w);
+    calculateResidualElements(nx, ny, x0, y0, w, d);
+
+    csrSymMultVec(ip, jp, e, w, v);
+    axpby(1, -1, v, d, d);
+
+    cout << format("Initial residual: {}", maxAbsElem(d)) << endl;
+
+    setInitialCondition(nx, ny, w);
     calculateResidualElements(nx, ny, x0, y0, w, d);
 
     vector<tuple<int, double>> statistics;

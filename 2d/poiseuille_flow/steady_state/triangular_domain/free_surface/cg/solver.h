@@ -29,6 +29,7 @@ namespace PoiseuilleFlow::SteadyState::TriangularDomain::FreeSurface::CG {
 
             path createDirectory();
 
+            void setSolution(int nx, int ny, double x0, double y0, vector<double>& w);
             void setInitialCondition(int nx, int ny,  vector<double>& w);               
 
             tuple<vector<int>, vector<int>, vector<double>> buildMatrix(int nx, int ny, double x0, double y0);

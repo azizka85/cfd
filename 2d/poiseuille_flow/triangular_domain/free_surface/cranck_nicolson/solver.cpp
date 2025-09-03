@@ -207,6 +207,29 @@ path Solver::createDirectory() {
     return dirPath;
 }
 
+void Solver::setSolution(
+    int nx, int ny, 
+    double x0, double y0, double t, 
+    vector<double>& w
+) {
+    for (int i = 0; i < nx; i++) {
+        for (int j = 0; j < ny; j++) {
+            double x = x0 + i*dx;
+            double y = y0 + j*dy;
+
+            auto [isDomain, _] = pointInDomain(x, y);
+
+            int k = i + j*nx;
+
+            if (isDomain) {
+                w[k] = cos(M_PI*x) * cos(M_PI*y) * exp(-2*M_PI*M_PI*nu*t);
+            } else {
+                w[k] = 0;
+            }
+        }
+    }
+}
+
 void Solver::setInitialCondition(
     int nx, int ny, 
     double x0, double y0,
@@ -256,14 +279,14 @@ tuple<
 
             jp.push_back(k);
 
-            if (!isDomain || (isBoundary && (j < ny-1 || i == 0 || i == nx-1))) {
+            if (!isDomain || (isBoundary && (i == 0 || i == nx - 1 || j != ny - 1))) {
                 e.push_back(1);
             } else {
-                if (j < ny-1) {
-                    e.push_back(1 + rx + ry);
-                } else {
+                if (j == ny - 1) {
                     e.push_back((1 + rx + ry)/2);
-                } 
+                } else {
+                    e.push_back(1 + rx + ry);
+                }
 
                 auto [isDomain, isBoundary] = pointInDomain(x - dx, y);
 
@@ -274,10 +297,10 @@ tuple<
 
                     jp.push_back(kl);
                     
-                    if (j < ny-1) {
-                        e.push_back(-rx/2);
-                    } else {
+                    if (j  == ny - 1) {
                         e.push_back(-rx/4);
+                    } else {
+                        e.push_back(-rx/2);
                     }
                 }
 
@@ -315,99 +338,81 @@ void Solver::calculateResidualElements(
 
             int k = i + j*nx;
 
-            if (isDomain) {                
-                if(isBoundary) {
-                    if (j == ny-1 && i > 0 && i < nx-1) {
-                        int kl = i - 1 + (ny - 1)*nx;
-                        int kr = i + 1 + (ny - 1)*nx;
-                        int kd = i + (ny - 2)*nx;
+            if (isDomain && !isBoundary) {   
+                double wl = w[i - 1 + j*nx];
+                
+                tie(isDomain, isBoundary) = pointInDomain(x - dx, y);
 
-                        double wl = w[kl];
+                if (isBoundary) {
+                    wl = cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
+                    d[k] += rx*cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
+                }
 
-                        if (i == 1) {
-                            wl = cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
-                            d[k] += rx*cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/4;
-                        }                        
+                double wr = w[i + 1 + j*nx];
 
-                        double wr = w[kr];
+                tie(isDomain, isBoundary) = pointInDomain(x + dx, y);
 
-                        if (i == nx - 2) {
-                            wr = cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
-                            d[k] += rx*cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/4;
-                        }       
-                        
-                        double wd = w[kd];
+                if (isBoundary) {
+                    wr = cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
+                    d[k] += rx*cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
+                }
 
-                        tie(isDomain, isBoundary) = pointInDomain(x, y - dy);
+                double wd = w[i + (j - 1)*nx];
 
-                        if (!isDomain) {
-                            wd = 0;
-                        } else if (isBoundary) {
-                            wd = cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*t);
-                            d[k] += ry*cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
-                        }
+                tie(isDomain, isBoundary) = pointInDomain(x, y - dy);
 
-                        d[k] += (1 - rx - ry)*w[k]/2 + rx*(wr + wl)/4 + ry*wd/2;
-                    } else {
-                        d[k] = cos(M_PI*x)*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
-                    }                    
-                } else {
+                if (isBoundary) {
+                    wd = cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*t);
+                    d[k] += ry*cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
+                }
+
+                double wu = w[i + (j + 1)*nx];
+
+                tie(isDomain, isBoundary) = pointInDomain(x, y + dy);
+
+                if (isBoundary && j < ny - 2) {
+                    wu = cos(M_PI*x)*cos(M_PI*(y + dy))*exp(-2*M_PI*M_PI*nu*t);
+                    d[k] += ry*cos(M_PI*x)*cos(M_PI*(y + dy))*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
+                }
+
+                d[k] += (1 - rx - ry)*w[k] + rx*(wr + wl)/2 + ry*(wu + wd)/2;
+            } else {
+                if (j == ny - 1 && i > 0 && i < nx - 1) {
+                    double wl = w[i - 1 + j*nx];
+
                     tie(isDomain, isBoundary) = pointInDomain(x - dx, y);
 
-                    double wl = 0;
-
-                    if (isDomain) {
-                        if (isBoundary) {
-                            wl = cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
-                            d[k] += rx*cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
-                        } else {
-                            wl = w[i - 1 + j*nx];
-                        }
+                    if (isBoundary) {
+                        wl = cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
+                        d[k] += rx*cos(M_PI*(x - dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/4;
                     }
+
+                    double wr = w[i + 1 + j*nx];
 
                     tie(isDomain, isBoundary) = pointInDomain(x + dx, y);
 
-                    double wr = 0;
-
-                    if (isDomain) {
-                        if (isBoundary) {
-                            wr = cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
-                            d[k] += rx*cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
-                        } else {
-                            wr = w[i + 1 + j*nx];
-                        }
+                    if (isBoundary) {
+                        wr = cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*t);
+                        d[k] += rx*cos(M_PI*(x + dx))*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt))/4;
                     }
+
+                    double wd = w[i + (j - 1)*nx];
 
                     tie(isDomain, isBoundary) = pointInDomain(x, y - dy);
 
-                    double wd = 0;
-
-                    if (isDomain) {
-                        if (isBoundary) {
-                            wd = cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*t);
-                            d[k] += ry*cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
-                        } else {
-                            wd = w[i + (j - 1)*nx];
-                        }
+                    if (isBoundary) {
+                        wd = cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*t);
+                        d[k] += ry*cos(M_PI*x)*cos(M_PI*(y - dy))*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
                     }
 
-                    tie(isDomain, isBoundary) = pointInDomain(x, y + dy);
-
-                    double wu = 0;
-
-                    if (isDomain) {
-                        if (isBoundary && (j < ny-2 || i == 0 || i == nx-1)) {
-                            wu = cos(M_PI*x)*cos(M_PI*(y + dy))*exp(-2*M_PI*M_PI*nu*t);
-                            d[k] += ry*cos(M_PI*x)*cos(M_PI*(y + dy))*exp(-2*M_PI*M_PI*nu*(t + dt))/2;
-                        } else {
-                            wu = w[i + (j + 1)*nx];
-                        }
-                    }                           
-
-                    d[k] += (1 - rx - ry)*w[k] + rx*(wr + wl)/2 + ry*(wu + wd)/2;                    
+                    d[k] += (1 - rx - ry)*w[k]/2 + rx*(wr + wl)/4 + ry*wd/2;
+                } else {
+                    if (!isBoundary) {
+                        d[k] = 0;
+                    } else {
+                        d[k] = cos(M_PI*x)*cos(M_PI*y)*exp(-2*M_PI*M_PI*nu*(t + dt));
+                    }
                 }
-            } else {
-                d[k] = 0;
             }           
         }
     }
