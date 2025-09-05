@@ -57,3 +57,6 @@ add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/cg)
 add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/free_surface/richardson)
 add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/free_surface/sor)
 add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/free_surface/cg)
+
+add_subdirectory(2d/heat_conduction/thermally_insulated/peaceman_rachford)
+add_subdirectory(2d/heat_conduction/thermally_insulated/cranck_nicolson)
