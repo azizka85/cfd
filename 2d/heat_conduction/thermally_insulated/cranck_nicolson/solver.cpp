@@ -225,7 +225,9 @@ tuple<
 
             jp.push_back(k);
 
-            if (i == 0 || i == nx-1 || j == 0 || j == ny-1) {
+            if ((i == 0 || i == nx-1) && (j == 0 || j == ny-1)) {
+                e.push_back((1 + rx + ry)/4);
+            } else if (i == 0 || i == nx-1 || j == 0 || j == ny-1) {
                 e.push_back((1 + rx + ry)/2);
             } else {
                 e.push_back(1 + rx + ry);
@@ -237,12 +239,12 @@ tuple<
                 ip[k+1] += 1;
 
                 jp.push_back(kl);
-                
-                if (i == nx-1 || (j > 0 && j < ny-1)) {
-                    e.push_back(-rx/2);
-                } else {
+
+                if (j == 0 || j == ny-1) {
                     e.push_back(-rx/4);
-                }
+                } else {
+                    e.push_back(-rx/2);
+                }                
             }
 
             if (j > 0) {
@@ -252,10 +254,10 @@ tuple<
 
                 jp.push_back(kd);
 
-                if (j == ny-1 || (i > 0 && i < nx-1)) {
-                    e.push_back(-ry/2);
-                } else {
+                if (i == 0 || i == nx-1) {
                     e.push_back(-ry/4);
+                } else {
+                    e.push_back(-ry/2);
                 }
             }
         }
@@ -302,11 +304,13 @@ void Solver::calculateResidualElements(
                 Tu = T[i + (j + 1)*nx];
             }
 
-            d[k] = (1 - rx - ry)*T[k] + rx*(Tr + Tl)/2 + ry*(Tu + Td)/2;            
-
-            if (i == 0 || i == nx-1 || j == 0 || j == ny-1) {
+            d[k] = (1 - rx - ry)*T[k] + rx*(Tr + Tl)/2 + ry*(Tu + Td)/2;     
+            
+            if ((i == 0 || i == nx-1) && (j == 0 || j == ny-1)) {
+                d[k] /= 4;
+            } else if (i == 0 || i == nx-1 || j == 0 || j == ny-1) {
                 d[k] /= 2;
-            }
+            }            
         }
     }
 }

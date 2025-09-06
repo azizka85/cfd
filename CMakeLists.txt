@@ -60,3 +60,7 @@ add_subdirectory(2d/poiseuille_flow/steady_state/triangular_domain/free_surface/
 
 add_subdirectory(2d/heat_conduction/thermally_insulated/peaceman_rachford)
 add_subdirectory(2d/heat_conduction/thermally_insulated/cranck_nicolson)
+
+add_subdirectory(2d/heat_conduction/thermally_insulated/steady_state/richardson)
+add_subdirectory(2d/heat_conduction/thermally_insulated/steady_state/sor)
+add_subdirectory(2d/heat_conduction/thermally_insulated/steady_state/cg)
