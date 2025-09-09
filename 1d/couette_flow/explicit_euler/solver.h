@@ -50,7 +50,7 @@ namespace CouetteFlow::ExplicitEuler {
             void setDY(double val);
 
             double getR();
-            void setR(double r);
+            void setR(double val);
 
             double getEndTime();
             void setEndTime(double val);

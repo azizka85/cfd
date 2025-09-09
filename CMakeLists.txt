@@ -64,3 +64,7 @@ add_subdirectory(2d/heat_conduction/thermally_insulated/cranck_nicolson)
 add_subdirectory(2d/heat_conduction/thermally_insulated/steady_state/richardson)
 add_subdirectory(2d/heat_conduction/thermally_insulated/steady_state/sor)
 add_subdirectory(2d/heat_conduction/thermally_insulated/steady_state/cg)
+
+add_subdirectory(1d/linear_advection/explicit_euler)
+add_subdirectory(1d/linear_advection/implicit_euler)
+add_subdirectory(1d/linear_advection/lax_wendroff)
