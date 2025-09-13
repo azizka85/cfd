@@ -68,3 +68,13 @@ add_subdirectory(2d/heat_conduction/thermally_insulated/steady_state/cg)
 add_subdirectory(1d/linear_advection/explicit_euler)
 add_subdirectory(1d/linear_advection/implicit_euler)
 add_subdirectory(1d/linear_advection/lax_wendroff)
+
+add_subdirectory(1d/inviscid_burgers/explicit_euler)
+add_subdirectory(1d/inviscid_burgers/upwind)
+add_subdirectory(1d/inviscid_burgers/upwind_conservative)
+add_subdirectory(1d/inviscid_burgers/beam_warming)
+add_subdirectory(1d/inviscid_burgers/roe)
+
+add_subdirectory(1d/inviscid_burgers/step/upwind_conservative)
+add_subdirectory(1d/inviscid_burgers/step/roe)
+add_subdirectory(1d/inviscid_burgers/step/enquist_osher)
