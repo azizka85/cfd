@@ -1,0 +1,363 @@
+#define _USE_MATH_DEFINES
+
+#include <format>
+
+#include <cmath>
+
+#include <fstream>
+#include <iostream>
+
+#include <stdexcept>
+
+#include "solver.h"
+
+using namespace InviscidBurgers::Step::TVD;
+
+Solver::Solver(double l, double dx, double a, double epsilon, double endTime, double outputTimeStep, string dir) {
+    setL(l);
+    setDX(dx);
+    setA(a);
+    setEpsilon(epsilon);
+    setEndTime(endTime);
+    setOutputTimeStep(outputTimeStep);
+    setDir(dir);
+}
+
+double Solver::getL() {
+    return l;
+}
+
+void Solver::setL(double val) {
+    if (val <= 0) {
+        throw runtime_error(
+            format("L should be > 0, but it is {}", val)
+        );
+    }
+
+    l = val;
+}
+
+double Solver::getDX() {
+    return dx;
+}
+
+void Solver::setDX(double val) {
+    if (val <= 0) {
+        throw runtime_error(
+            format("dx should be > 0, but it is {}", val)
+        );
+    }
+
+    dx = val;
+}
+
+double Solver::getA() {
+    return a;
+}
+
+void Solver::setA(double val) {
+    if (val <= 0) {
+        throw runtime_error(
+            format("A should be > 0, but it is {}", val)
+        );
+    }
+
+    a = val;
+}
+
+double Solver::getEpsilon() {
+    return epsilon;
+}
+
+void Solver::setEpsilon(double val) {
+    if (val <= 0) {
+        throw runtime_error(
+            format("Epsilon should be > 0, but it is {}", val)
+        );
+    }
+
+    epsilon = val;
+}
+
+double Solver::getEndTime() {
+    return endTime;
+}
+
+void Solver::setEndTime(double val) {
+    if (val <= 0) {
+        throw runtime_error(
+            format("endTime should be > 0, but it is {}", val)
+        );
+    }
+
+    endTime = val;
+}
+
+double Solver::getOutputTimeStep() {
+    return outputTimeStep;
+}
+
+void Solver::setOutputTimeStep(double val) {
+    if (val <= 0) {
+        throw runtime_error(
+            format("outputTimeStep should be > 0, but it is {}", val)
+        );
+    }
+
+    outputTimeStep = val;
+}
+
+string Solver::getDir() {
+    return dir;
+}
+
+void Solver::setDir(string val) {
+    if (val.empty()) {
+        throw runtime_error(
+            format("dir should not be empty, but it is {}", val)
+        );
+    }
+
+    dir = val;
+}
+
+path Solver::createDirectory() {
+    auto dirPath = path(
+        format("{}/L={}, dx={}, a={}, epsilon={}", dir, l, dx, a, epsilon)
+    );
+
+    create_directories(dirPath);    
+
+    return dirPath;
+}
+
+void Solver::setInitialCondition(int nx, vector<double>& u) {
+    for (int i = 0; i < nx; i++) {
+        double x = dx * i;
+
+        if (x <= l/2)
+            u[i] = -1;
+        else
+            u[i] = 1;
+    }
+}
+
+double Solver::maxAbsDifference(int nx, vector<double> &u, vector<double> &u1) {
+    double maxDiff = 0.;
+
+    for (int i = 0; i < nx; i++) {
+        maxDiff = max(
+            maxDiff,
+            abs(u[i] - u1[i])
+        );
+    }
+
+    return maxDiff;
+}
+
+void Solver::updateData(int nx, vector<double> &u, vector<double> &u1) {
+    for (int i = 0; i < nx; i++) {
+        u[i] = u1[i];
+    }
+}
+
+void Solver::writeData(vector<double> &u, double t, double dx, int nx, int m, path outDir) {
+    auto filePath = path(
+        format("data.{:03}.vtk", m)
+    );
+
+    filePath = outDir / filePath;
+
+    ofstream file(filePath);
+
+    if (file.bad()) {
+        throw runtime_error(
+            format("Failed to open file at: {}", filePath.string())
+        );
+    }
+
+    file << "# vtk DataFile Version 3.0" << endl;
+    file << format("TIME {:.3f}", t) << endl;
+    file << "ASCII" << endl;
+    file << "DATASET STRUCTURED_GRID" << endl;
+    file << format("DIMENSIONS {} 1 1", nx) << endl;    
+    file << format("POINTS {} float", nx) << endl;
+
+    for (int i = 0; i < nx; i++) {
+        double x = dx * i;
+
+        file << format("{:.3f} 0.0 0.0", x) << endl;
+    }
+
+    file << "FIELD FieldData 1" << endl;
+    file << "Time 1 1 float" << endl;
+    file << format("{:.3f}", t) << endl;
+    file << format("POINT_DATA {}", nx) << endl;
+    file << "SCALARS u float" << endl;
+    file << "LOOKUP_TABLE default" << endl;
+
+    for (int i = 0; i < nx; i++) {
+        file << format("{:.3f}", u[i]) << endl;
+    }
+}
+
+void Solver::writeStatistics(vector<tuple<int, double, double>> &statistics, path outDir) {
+    auto dirPath = outDir / path("statistics");
+
+    create_directory(dirPath);
+
+    auto filePath = dirPath / path("convergence.csv");
+
+    ofstream file(filePath);
+
+    if (file.bad()) {
+        throw runtime_error(
+            format("Failed to open file at: {}", filePath.string())
+        );
+    }
+
+    file << "n,  t,   max_diff" << endl;
+
+    for (auto t: statistics) {
+        file << format(
+            "{},  {:.3f},  {:.5f}", 
+            get<0>(t),
+            get<1>(t),
+            get<2>(t)
+        ) << endl;
+    }
+}
+
+double Solver::q(double x) {
+    if (abs(x) < 2*epsilon) {
+        return x*x/4/epsilon + epsilon;
+    }
+
+    return abs(x);
+}
+
+void Solver::solve() {
+    auto outDir = createDirectory();
+
+    double dt = a*dx;
+
+    int nx = static_cast<int>(
+        ceil(l/dx)
+    ) + 1;
+
+    vector<double> u(nx);
+    vector<double> u1(nx);
+    vector<double> up(nx);
+
+    setInitialCondition(nx, u);
+
+    updateData(nx, up, u);
+
+    double t = 0;
+    double tn = outputTimeStep;
+
+    int n = 1;
+    int m = 0;
+
+    vector<tuple<int, double, double>> statistics;
+
+    writeData(u, t, dx, nx, m, outDir);
+
+    m += 1;
+
+    while (t <= endTime) {
+        for (int i = 0; i < nx; i++) {
+            double ul = u[1];
+            double ur = u[nx-2];
+
+            if (i > 0) {
+                ul = u[i-1];
+            }
+
+            if (i < nx-1) {
+                ur = u[i+1];
+            }
+
+            double ull = u[2];
+            double urr = u[nx-3];
+
+            if (i == 1) {
+                ull = u[1];
+            } else if (i > 1) {
+                ull = u[i-2];
+            }
+
+            if (i == nx-2) {
+                urr = u[nx-2];
+            } else if (i < nx-2) {
+                urr = u[i+2];
+            }
+
+            double f = u[i]*u[i]/2;
+            double fr = ur*ur/2;
+            double fl = ul*ul/2;
+
+            double fp = (f + fr)/2;
+            double fm = (fl + f)/2;
+
+            double ar = (u[i] + ur)*dt/2/dx;
+            double al = (ul + u[i])*dt/2/dx;
+
+            double arr = (ur + urr)*dt/2/dx;
+            double all = (ull + ul)*dt/2/dx;
+
+            double dru = ur - u[i];
+            double dlu = u[i] - ul;
+
+            double drru = urr - ur;
+            double dllu = ul - ull;
+
+            double gr = (q(ar) - ar*ar)*dru/2;
+            double gl = (q(al) - al*al)*dlu/2;
+
+            double grr = (q(arr) - arr*arr)*drru/2;
+            double gll = (q(all) - all*all)*dllu/2;
+
+            double sr = gr > 0 ? 1 : -1;
+            double sl = gl > 0 ? 1 : -1;
+
+            double srr = grr > 0 ? 1 : -1;            
+
+            double g = sr*max(0., min(abs(gr), gl*sr));
+            double gp = srr*max(0., min(abs(grr), gr*srr));
+            double gm = sl*max(0., min(abs(gl), gll*sl));
+
+            double br = dru > 0 ? (gp - g)/dru : 0;
+            double bl = dlu > 0 ? (g - gm)/dlu : 0;
+
+            double hp = (g + gp - q(ar + br)*dru)/2;
+            double hm = (g + gm - q(al + bl)*dlu)/2;
+
+            u1[i] = u[i] - (fp - fm)*dt/dx - hp + hm;
+        }
+
+        updateData(nx, u, u1);
+
+        t += dt;
+
+        if (t >= tn) {
+            writeData(u, t, dx, nx, m, outDir);
+
+            auto maxDiff = maxAbsDifference(nx, u, up);
+
+            cout << format("Write data in file t={:.3f}, convergence of u={:.5f}", t, maxDiff) << endl;
+
+            statistics.push_back({n, tn, maxDiff});
+
+            updateData(nx, up, u);
+
+            m += 1;
+
+            tn += outputTimeStep;
+        }
+
+        n += 1;
+    }
+
+    writeStatistics(statistics, outDir);
+}
